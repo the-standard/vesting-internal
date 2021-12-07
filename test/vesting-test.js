@@ -42,6 +42,9 @@ describe("Vesting", function () {
     const u = await vault.userTotal(0);
     expect(ethers.BigNumber.from(a)).to.equal(ethers.BigNumber.from(u));
 
+    const name = await vault.userName(0);
+    expect(name).to.equal("Ana");
+
     const aa = await vault.userAddresses(0);
     expect(aa.length).to.eq(1);
     expect(aa[0]).to.eq(ethers.utils.getAddress(ana.address));
@@ -60,7 +63,7 @@ describe("Vesting", function () {
     const a = 50_000_000;
 
     // should revert
-    await expect(vault.transfer(tokens)).to.be.revertedWith("error-no-users");
+    await expect(vault.transfer([0], a, 0)).to.be.revertedWith("error-no-users");
 
     // approve the contract to spend the money
     await token.approve(vault.address, a, { from: owner.address });
@@ -73,7 +76,7 @@ describe("Vesting", function () {
 
     // now transfer again
     const half = a / 2;
-    await vault.transfer(half);
+    await vault.transfer([0], half, 0);
     userBalance = await token.balanceOf(ana.address);
     expect(userBalance).to.eq(half);
 
@@ -82,7 +85,7 @@ describe("Vesting", function () {
     expect(ethers.BigNumber.from(half)).to.equal(ethers.BigNumber.from(u));
 
     // now transfer again
-    await vault.transfer(half);
+    await vault.transfer([0], half, 0);
     u = await vault.userBalance(0);
     expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
     
@@ -90,7 +93,7 @@ describe("Vesting", function () {
     expect(userBalance).to.eq(half*2);
 
     // now transfer again
-    await vault.transfer(half);
+    await vault.transfer([0], half, 0);
     u = await vault.userBalance(0);
     expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
     
@@ -111,7 +114,7 @@ describe("Vesting", function () {
     const a = 500_000_000;
 
     // should revert
-    await expect(vault.transfer(tokens)).to.be.revertedWith("error-no-users");
+    await expect(vault.transfer([0], a, 0)).to.be.revertedWith("error-no-users");
 
     // approve the contract to spend the money
     await token.approve(vault.address, a, { from: owner.address });
@@ -128,7 +131,7 @@ describe("Vesting", function () {
     expect(await vault.add("Simon", aa, [simon.address])).to.emit(vault, 'UserAdded').withArgs(1);
 
     // now transfer 
-    await vault.transfer(aa);
+    await vault.transfer([0,1,2], aa, 0);
 
     // balances
     const anaB = await token.balanceOf(ana.address);

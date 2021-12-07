@@ -16,7 +16,6 @@ contract Vesting is Ownable {
   uint256 public totalAllocated;    // the total number of tokens allocated
   uint256 public totalClaimed;      // the total amount claimed
 
-  // uint public decimals;          // the decimals for the token;
   ERC20 public token;               // the address for the token
 
   struct User {
@@ -30,6 +29,7 @@ contract Vesting is Ownable {
   mapping (uint256 => User) public users;
 
   event UserAdded(uint256 userId);
+  event BalanceTransfer(uint256 userId, uint256 amount);
 
   constructor(ERC20 _token) public {
     require(address(_token) != address(0));
@@ -81,30 +81,38 @@ contract Vesting is Ownable {
     return user.balance;
   }
 
+  // returns the user's name
+  function userName(uint256 id) public view returns (string memory) {
+    User storage user = users[id];
+    return user.name;
+  }
+
   function process(ERC20 token, address _address, uint256 amount, User memory user) private {
     require(token.transfer(_address, amount), "transfer-failed");
     user.balance = user.balance - amount;
     users[user.id] = user;
+    emit BalanceTransfer(user.id, amount);
   }
 
-  function transfer(uint256 amount) external {
+  function transfer(uint256[] memory _ids, uint256 amount, uint _address_id) external onlyOwner {
     require(count > 0, "error-no-users");
+    require(_address_id <= 4, "error-no-address");
 
     ERC20 token = ERC20(token);
 
-    for(uint8 i=0; i<count; i++){
-      User memory user = users[i];
+    for(uint8 i=0; i<_ids.length; i++){
+      User memory user = users[_ids[i]];
 
       // continue if the user balance is less than the amount;
       if (user.balance < amount) {
         continue;
       }
 
-      for(uint8 a=0; a<users[i].addresses.length; a++) {
-        address _address = users[i].addresses[a];
-        // random address
-        process(token, _address, amount, user);
-      }
+      // for(uint8 a=0; a<users[i].addresses.length; a++) {
+      address _address = users[i].addresses[_address_id];
+      // random address
+      process(token, _address, amount, user);
+      // }
     }
   }
 }
