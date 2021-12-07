@@ -87,11 +87,11 @@ contract Vesting is Ownable {
     return user.name;
   }
 
-  function process(ERC20 token, address _address, uint256 amount, User memory user) private {
+  function process(ERC20 token, address _address, uint256 amount, uint _address_id, User memory user) private {
     require(token.transfer(_address, amount), "transfer-failed");
     user.balance = user.balance - amount;
     users[user.id] = user;
-    emit BalanceTransfer(user.id, amount);
+    emit BalanceTransfer(user.id, amount, _address_id);
   }
 
   function transfer(uint256[] memory _ids, uint256 amount, uint _address_id) external onlyOwner {
@@ -108,11 +108,8 @@ contract Vesting is Ownable {
         continue;
       }
 
-      // for(uint8 a=0; a<users[i].addresses.length; a++) {
       address _address = users[i].addresses[_address_id];
-      // random address
-      process(token, _address, amount, user);
-      // }
+      process(token, _address, amount, _address_id, user);
     }
   }
 }
