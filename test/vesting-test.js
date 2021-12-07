@@ -42,6 +42,9 @@ describe("Vesting", function () {
     const u = await vault.userTotal(0);
     expect(ethers.BigNumber.from(a)).to.equal(ethers.BigNumber.from(u));
 
+    const ub = await vault.userBalance(0);
+    expect(ethers.BigNumber.from(a)).to.equal(ethers.BigNumber.from(ub));
+
     const name = await vault.userName(0);
     expect(name).to.equal("Ana");
 
@@ -88,7 +91,7 @@ describe("Vesting", function () {
     await vault.transfer([0], half, 0);
     u = await vault.userBalance(0);
     expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
-    
+
     userBalance = await token.balanceOf(ana.address);
     expect(userBalance).to.eq(half*2);
 
@@ -96,7 +99,7 @@ describe("Vesting", function () {
     await vault.transfer([0], half, 0);
     u = await vault.userBalance(0);
     expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
-    
+
     userBalance = await token.balanceOf(ana.address);
     expect(userBalance).to.eq(half*2);
   });
@@ -130,7 +133,7 @@ describe("Vesting", function () {
     // add simon
     expect(await vault.add("Simon", aa, [simon.address])).to.emit(vault, 'UserAdded').withArgs(1);
 
-    // now transfer 
+    // now transfer
     await vault.transfer([0,1,2], aa, 0);
 
     // balances
@@ -147,18 +150,82 @@ describe("Vesting", function () {
     expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
   });
 
-  it("Should not open a vault from the owner address", async function () {
-    // const [owner, test] = await ethers.getSigners();
+  it("Should delete a user and funds", async function () {
+    const [owner, ana, simon] = await ethers.getSigners();
+    const Vault = await ethers.getContractFactory("Vesting");
 
-    // const Vault = await ethers.getContractFactory("Vesting");
-    // const vault = await Vault.deploy();
-    // await vault.deployed();
+    const vault = await Vault.deploy(token.address);
+    await vault.deployed();
 
-    // expect(await vault.owner()).to.eq(owner.address);
+    const a = 500_000_000;
 
-    // await expect(vault.add("Ana", 500000, { from: test.address })).to.be.revertedWith("vault-owner-address-0");
+    // approve the contract to spend the money
+    await token.approve(vault.address, a, { from: owner.address });
+
+    const vaultB = await token.balanceOf(owner.address);
+    expect(vaultB).to.eq(tokens);
+
+    const aa = 50_000_000;
+
+    // add ana
+    expect(await vault.add("Ana", aa, [ana.address])).to.emit(vault, 'UserAdded').withArgs(0);
+
+    let u = await vault.userBalance(0);
+    expect(ethers.BigNumber.from(aa)).to.equal(ethers.BigNumber.from(u));
+
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-aa);
+    expect(await token.balanceOf(vault.address)).to.eq(aa);
+
+    // remove the user
+    expect(await vault.remove(0)).to.emit(vault, 'UserRemoved').withArgs(0);
+
+    u = await vault.userBalance(0);
+    expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
+
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-aa);
+    expect(await token.balanceOf(vault.address)).to.eq(aa);
+  });
+
+  it("Should delete a user and funds after some vesting stuff", async function () {
+    const [owner, ana, simon] = await ethers.getSigners();
+    const Vault = await ethers.getContractFactory("Vesting");
+
+    const vault = await Vault.deploy(token.address);
+    await vault.deployed();
+
+    const a = 500_000_000;
+
+    // approve the contract to spend the money
+    await token.approve(vault.address, a, { from: owner.address });
+
+    const aa = 50_000_000;
+
+    // add ana
+    expect(await vault.add("Ana", aa, [ana.address])).to.emit(vault, 'UserAdded').withArgs(0);
+
+    let u = await vault.userBalance(0);
+    expect(ethers.BigNumber.from(aa)).to.equal(ethers.BigNumber.from(u));
+
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-aa);
+    expect(await token.balanceOf(vault.address)).to.eq(aa);
+
+    const value = aa / 5;
+    await vault.transfer([0], value, 0);
+    let balance = await vault.userBalance(0);
+    expect(balance).to.eq(aa - value);
+    expect(balance).to.eq(40_000_000);
+
+    // remove the user
+    expect(await vault.remove(0)).to.emit(vault, 'UserRemoved').withArgs(0);
+
+    u = await vault.userBalance(0);
+    expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
+
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-(aa-value));
+    expect(await token.balanceOf(vault.address)).to.eq(aa-value);
   });
 });
 
 // change addresses
 // remove user
+// close and empty funds

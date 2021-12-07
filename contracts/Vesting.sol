@@ -29,7 +29,8 @@ contract Vesting is Ownable {
   mapping (uint256 => User) public users;
 
   event UserAdded(uint256 userId);
-  event BalanceTransfer(uint256 userId, uint256 amount);
+  event UserRemoved(uint256 userId);
+  event BalanceTransfer(uint256 userId, uint256 amount, uint address_id);
 
   constructor(ERC20 _token) public {
     require(address(_token) != address(0));
@@ -63,6 +64,19 @@ contract Vesting is Ownable {
     return count;
   }
 
+  function remove(uint256 id) public onlyOwner {
+
+    ERC20 token = ERC20(token);
+    User storage user = users[id];
+
+    uint256 amountLeft = user.total.sub(user.balance);
+    require(token.transfer(owner(), amountLeft));
+
+    user.balance = 0;
+
+    emit UserRemoved(id);
+  }
+
   // returns the amount a user is allocated
   function userAddresses(uint256 id) public view returns (address[] memory) {
     User storage user = users[id];
@@ -89,7 +103,7 @@ contract Vesting is Ownable {
 
   function process(ERC20 token, address _address, uint256 amount, uint _address_id, User memory user) private {
     require(token.transfer(_address, amount), "transfer-failed");
-    user.balance = user.balance - amount;
+    user.balance = user.balance.sub(amount);
     users[user.id] = user;
     emit BalanceTransfer(user.id, amount, _address_id);
   }
