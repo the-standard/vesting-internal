@@ -29,6 +29,7 @@ describe("Vesting", function () {
     await vault.deployed();
 
     expect(await vault.token()).to.eq(ethers.utils.getAddress(token.address));
+    expect(await vault.active()).to.eq(1);
 
     // approve the contract to spend the money
     await token.approve(vault.address, a, { from: owner.address });
@@ -239,11 +240,51 @@ describe("Vesting", function () {
     expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
 
     expect(await token.balanceOf(ana.address)).to.eq(value);                  // see above
-    expect(await token.balanceOf(owner.address)).to.eq(tokens-(value));          // because we have allocated 40,000,000 already
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-(value));       // because we have allocated 40,000,000 already
     expect(await token.balanceOf(vault.address)).to.eq(0);
+  });
+
+  it("Should close and return funds to owner", async function () {
+    const [owner, ana, simon] = await ethers.getSigners();
+    const Vault = await ethers.getContractFactory("Vesting");
+
+    const vault = await Vault.deploy(token.address);
+    await vault.deployed();
+
+    const a = 500_000_000;
+
+    // approve the contract to spend the money
+    await token.approve(vault.address, a, { from: owner.address });
+
+    const aa = 50_000_000;
+
+    // check the balances are ok
+    expect(await token.balanceOf(owner.address)).to.eq(tokens);
+    expect(await token.balanceOf(vault.address)).to.eq(0);
+
+    // add ana
+    expect(await vault.add("Ana", aa, [ana.address])).to.emit(vault, 'UserAdded').withArgs(0);
+    expect(await vault.add("Ana", aa, [simon.address])).to.emit(vault, 'UserAdded').withArgs(1);
+
+    // check things are in order
+    expect(await token.balanceOf(ana.address)).to.eq(0);                // nothing transferred
+    expect(await token.balanceOf(simon.address)).to.eq(0);              // nothing transferred
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-(aa*2));  // aa tokens allocated to the contract
+    expect(await token.balanceOf(vault.address)).to.eq(aa*2);           // contract got some tokens!
+
+    // close the vault
+    expect(await vault.close()).to.emit(vault, 'VaultClosed').withArgs(0);
+    expect(await vault.active()).to.eq(0);
+    
+    // check things are in order
+    expect(await token.balanceOf(owner.address)).to.eq(tokens);         // aa tokens allocated to the contract
+    expect(await token.balanceOf(vault.address)).to.eq(0);              // contract got some tokens!
+
+    // should fail
+    await expect(vault.transfer([0], a, 0)).to.be.revertedWith("not-active");
+    await expect(vault.add("Ana", aa, [ana.address])).to.be.revertedWith("not-active");
   });
 });
 
 // change addresses
-// remove user
 // close and empty funds

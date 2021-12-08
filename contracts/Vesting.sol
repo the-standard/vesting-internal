@@ -15,6 +15,7 @@ contract Vesting is Ownable {
   uint256 public count;             // the number of users we have in here
   uint256 public totalAllocated;    // the total number of tokens allocated
   uint256 public totalClaimed;      // the total amount claimed
+  uint8 public active;              // is the vault active?
 
   ERC20 public token;               // the address for the token
 
@@ -31,13 +32,17 @@ contract Vesting is Ownable {
   event UserAdded(uint256 userId);
   event UserRemoved(uint256 userId);
   event BalanceTransfer(uint256 userId, uint256 amount, uint address_id);
+  event VaultClosed(uint id);
 
   constructor(ERC20 _token) public {
     require(address(_token) != address(0));
+    active = 1;
     token = _token;
   }
 
   function add(string memory name, uint256 amount, address[] memory addresses) public onlyOwner returns (uint256) {
+    require(active == 1, "not-active");
+
     // create the user
     User memory user = User({
       id: count,
@@ -109,6 +114,7 @@ contract Vesting is Ownable {
   }
 
   function transfer(uint256[] memory _ids, uint256 amount, uint _address_id) external onlyOwner {
+    require(active == 1, "not-active");
     require(count > 0, "error-no-users");
     require(_address_id <= 4, "error-no-address");
 
@@ -125,5 +131,15 @@ contract Vesting is Ownable {
       address _address = users[i].addresses[_address_id];
       process(token, _address, amount, _address_id, user);
     }
+  }
+
+  function close() external onlyOwner {
+    ERC20 token = ERC20(token);
+    uint256 balance = token.balanceOf(address(this));
+
+    require(token.transfer(owner(), balance));
+
+    active = 0;
+    emit VaultClosed(0);
   }
 }
