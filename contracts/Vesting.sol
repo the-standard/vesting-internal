@@ -70,15 +70,12 @@ contract Vesting is Ownable {
   }
 
   function remove(uint256 id) public onlyOwner {
-
     ERC20 token = ERC20(token);
     User storage user = users[id];
 
     require(token.transfer(owner(), user.balance));
 
     user.balance = 0;
-    // users[id] = user;
-
     emit UserRemoved(id);
   }
 
