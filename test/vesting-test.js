@@ -87,6 +87,8 @@ describe("Vesting", function () {
     let u = await vault.userBalance(0);
     expect(ethers.BigNumber.from(half)).to.equal(ethers.BigNumber.from(u));
 
+    expect(await token.balanceOf(vault.address)).to.eq(a-half);
+
     // now transfer again
     await vault.transfer([0], half, 0);
     u = await vault.userBalance(0);
@@ -115,6 +117,7 @@ describe("Vesting", function () {
     expect(userBalance).to.eq(0);
 
     const a = 500_000_000;
+    // const xx = 30_000_000
 
     // should revert
     await expect(vault.transfer([0], a, 0)).to.be.revertedWith("error-no-users");
@@ -182,8 +185,8 @@ describe("Vesting", function () {
     u = await vault.userBalance(0);
     expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
 
-    expect(await token.balanceOf(owner.address)).to.eq(tokens-aa);
-    expect(await token.balanceOf(vault.address)).to.eq(aa);
+    expect(await token.balanceOf(owner.address)).to.eq(tokens);
+    expect(await token.balanceOf(vault.address)).to.eq(0);
   });
 
   it("Should delete a user and funds after some vesting stuff", async function () {
@@ -200,20 +203,34 @@ describe("Vesting", function () {
 
     const aa = 50_000_000;
 
+    // check the balances are ok
+    expect(await token.balanceOf(ana.address)).to.eq(0);
+    expect(await token.balanceOf(owner.address)).to.eq(tokens);
+    expect(await token.balanceOf(vault.address)).to.eq(0);
+
     // add ana
     expect(await vault.add("Ana", aa, [ana.address])).to.emit(vault, 'UserAdded').withArgs(0);
 
     let u = await vault.userBalance(0);
     expect(ethers.BigNumber.from(aa)).to.equal(ethers.BigNumber.from(u));
 
-    expect(await token.balanceOf(owner.address)).to.eq(tokens-aa);
-    expect(await token.balanceOf(vault.address)).to.eq(aa);
+    // check things are in order
+    expect(await token.balanceOf(ana.address)).to.eq(0);             // nothing transferred
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-aa);   // aa tokens allocated to the contract
+    expect(await token.balanceOf(vault.address)).to.eq(aa);          // contract got some tokens!
 
     const value = aa / 5;
     await vault.transfer([0], value, 0);
+
     let balance = await vault.userBalance(0);
     expect(balance).to.eq(aa - value);
     expect(balance).to.eq(40_000_000);
+
+    // check things are in order
+    expect(await token.balanceOf(ana.address)).to.eq(value);         // only one transfer
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-aa);   // aa tokens allocated to the contract
+    expect(await token.balanceOf(vault.address)).to.eq(aa - value);  // contract got some tokens - minus the ones it spent - 40,000,000
+
 
     // remove the user
     expect(await vault.remove(0)).to.emit(vault, 'UserRemoved').withArgs(0);
@@ -221,8 +238,9 @@ describe("Vesting", function () {
     u = await vault.userBalance(0);
     expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
 
-    expect(await token.balanceOf(owner.address)).to.eq(tokens-(aa-value));
-    expect(await token.balanceOf(vault.address)).to.eq(aa-value);
+    expect(await token.balanceOf(ana.address)).to.eq(value);                  // see above
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-(value));          // because we have allocated 40,000,000 already
+    expect(await token.balanceOf(vault.address)).to.eq(0);
   });
 });
 

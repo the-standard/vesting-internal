@@ -69,10 +69,10 @@ contract Vesting is Ownable {
     ERC20 token = ERC20(token);
     User storage user = users[id];
 
-    uint256 amountLeft = user.total.sub(user.balance);
-    require(token.transfer(owner(), amountLeft));
+    require(token.transfer(owner(), user.balance));
 
     user.balance = 0;
+    // users[id] = user;
 
     emit UserRemoved(id);
   }
