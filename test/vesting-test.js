@@ -287,4 +287,4 @@ describe("Vesting", function () {
 });
 
 // change addresses
-// close and empty funds
+// divide by months or set months
