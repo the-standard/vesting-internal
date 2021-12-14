@@ -16,6 +16,7 @@ contract Vesting is Ownable {
   uint256 public totalAllocated;    // the total number of tokens allocated
   uint256 public totalClaimed;      // the total amount claimed
   uint8 public active;              // is the vault active?
+  uint public months;
 
   ERC20 public token;               // the address for the token
 
@@ -24,6 +25,7 @@ contract Vesting is Ownable {
     string name;
     uint256 total;
     uint256 balance;
+    uint256 initial;
     address[] addresses;
   }
 
@@ -34,13 +36,19 @@ contract Vesting is Ownable {
   event BalanceTransfer(uint256 userId, uint256 amount, uint address_id);
   event VaultClosed(uint id);
 
-  constructor(ERC20 _token) public {
+  constructor(ERC20 _token, uint _months) public {
     require(address(_token) != address(0));
     active = 1;
     token = _token;
+    months = _months; // TODO test months set
   }
 
-  function add(string memory name, uint256 amount, address[] memory addresses) public onlyOwner returns (uint256) {
+  function add(
+    string memory name,
+    uint256 amount,
+    uint256 initial,
+    address[] memory addresses
+  ) public onlyOwner returns (uint256) {
     require(active == 1, "not-active");
 
     // create the user
@@ -48,7 +56,8 @@ contract Vesting is Ownable {
       id: count,
       name: name,
       total: amount,
-      balance: amount,
+      balance: amount.sub(initial),
+      initial: initial,
       addresses: addresses
     });
 
@@ -110,7 +119,27 @@ contract Vesting is Ownable {
     emit BalanceTransfer(user.id, amount, _address_id);
   }
 
-  function transfer(uint256[] memory _ids, uint256 amount, uint _address_id) external onlyOwner {
+  // function transfer(uint256[] memory _ids, uint256 amount, uint _address_id) external onlyOwner {
+  //   require(active == 1, "not-active");
+  //   require(count > 0, "error-no-users");
+  //   require(_address_id <= 4, "error-no-address");
+
+  //   ERC20 token = ERC20(token);
+
+  //   for(uint8 i=0; i<_ids.length; i++){
+  //     User memory user = users[_ids[i]];
+
+  //     // continue if the user balance is less than the amount;
+  //     if (user.balance < amount) {
+  //       continue;
+  //     }
+
+  //     address _address = users[i].addresses[_address_id];
+  //     process(token, _address, amount, _address_id, user);
+  //   }
+  // }
+
+  function transfer(uint256[] memory _ids, uint _address_id) external onlyOwner {
     require(active == 1, "not-active");
     require(count > 0, "error-no-users");
     require(_address_id <= 4, "error-no-address");
@@ -120,10 +149,24 @@ contract Vesting is Ownable {
     for(uint8 i=0; i<_ids.length; i++){
       User memory user = users[_ids[i]];
 
-      // continue if the user balance is less than the amount;
-      if (user.balance < amount) {
+      // if the user balance is zero, don't transfer anything
+      if (user.balance <= 0) {
         continue;
       }
+
+      uint256 b = user.total.sub(user.initial);
+      uint256 amount = b.div(uint256(months));
+
+      // if the balance of the user is less than the monthly amount
+      // just use the balance of the user, which should zero stuff out
+      if (user.balance < amount) {
+        amount = user.balance;
+      }
+
+      // continue if the user balance is less than the amount;
+      // if (user.balance < amount) {
+      //   continue;
+      // }
 
       address _address = users[i].addresses[_address_id];
       process(token, _address, amount, _address_id, user);

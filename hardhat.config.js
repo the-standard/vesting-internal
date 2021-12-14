@@ -10,17 +10,17 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
-excludeContracts: ['contracts/mocks', 'file.sol', 'file.sol:contractName']
+excludeContracts: ['contracts/mocks/*', 'file.sol', 'file.sol:contractName']
 
 const { RINKEBY_PRIVATE_KEY, INFURA_API_KEY } = process.env;
 
 module.exports = {
-  networks: {
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${INFURA_API_KEY}`,
-      accounts: [`${RINKEBY_PRIVATE_KEY}`]
-    }
-  },
+  // networks: {
+  //   rinkeby: {
+  //     url: `https://rinkeby.infura.io/v3/${INFURA_API_KEY}`,
+  //     accounts: [`${RINKEBY_PRIVATE_KEY}`]
+  //   }
+  // },
   solidity: {
     compilers: [
       {
