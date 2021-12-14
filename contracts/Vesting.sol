@@ -27,7 +27,6 @@ contract Vesting is Ownable {
     uint256 balance;
     uint256 initial;
     address[] addresses;
-    bool first;
   }
 
   mapping (uint256 => User) public users;
@@ -57,10 +56,9 @@ contract Vesting is Ownable {
       id: count,
       name: name,
       total: amount,
-      balance: amount.sub(initial),
+      balance: amount,
       initial: initial,
       addresses: addresses,
-      first: false
     });
 
     // add the user to the array;
@@ -85,9 +83,6 @@ contract Vesting is Ownable {
     User storage user = users[id];
 
     uint256 balance = user.balance;
-    if (user.first == false) {
-      balance = user.balance.add(user.initial);
-    }
 
     require(token.transfer(owner(), balance));
 
@@ -141,7 +136,7 @@ contract Vesting is Ownable {
         continue;
       }
 
-      uint256 b = user.total.sub(user.initial);
+      uint256 b = user.total.sub(user.total);
       uint256 amount = b.div(uint256(months));
 
       // if the balance of the user is less than the monthly amount
