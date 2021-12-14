@@ -27,6 +27,7 @@ contract Vesting is Ownable {
     uint256 balance;
     uint256 initial;
     address[] addresses;
+    bool first;
   }
 
   mapping (uint256 => User) public users;
@@ -58,7 +59,8 @@ contract Vesting is Ownable {
       total: amount,
       balance: amount.sub(initial),
       initial: initial,
-      addresses: addresses
+      addresses: addresses,
+      first: false
     });
 
     // add the user to the array;
@@ -82,7 +84,12 @@ contract Vesting is Ownable {
     ERC20 token = ERC20(token);
     User storage user = users[id];
 
-    require(token.transfer(owner(), user.balance));
+    uint256 balance = user.balance;
+    if (user.first == false) {
+      balance = user.balance.add(user.initial);
+    }
+
+    require(token.transfer(owner(), balance));
 
     user.balance = 0;
     emit UserRemoved(id);
@@ -119,26 +126,6 @@ contract Vesting is Ownable {
     emit BalanceTransfer(user.id, amount, _address_id);
   }
 
-  // function transfer(uint256[] memory _ids, uint256 amount, uint _address_id) external onlyOwner {
-  //   require(active == 1, "not-active");
-  //   require(count > 0, "error-no-users");
-  //   require(_address_id <= 4, "error-no-address");
-
-  //   ERC20 token = ERC20(token);
-
-  //   for(uint8 i=0; i<_ids.length; i++){
-  //     User memory user = users[_ids[i]];
-
-  //     // continue if the user balance is less than the amount;
-  //     if (user.balance < amount) {
-  //       continue;
-  //     }
-
-  //     address _address = users[i].addresses[_address_id];
-  //     process(token, _address, amount, _address_id, user);
-  //   }
-  // }
-
   function transfer(uint256[] memory _ids, uint _address_id) external onlyOwner {
     require(active == 1, "not-active");
     require(count > 0, "error-no-users");
@@ -162,11 +149,6 @@ contract Vesting is Ownable {
       if (user.balance < amount) {
         amount = user.balance;
       }
-
-      // continue if the user balance is less than the amount;
-      // if (user.balance < amount) {
-      //   continue;
-      // }
 
       address _address = users[i].addresses[_address_id];
       process(token, _address, amount, _address_id, user);

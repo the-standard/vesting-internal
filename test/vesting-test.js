@@ -105,88 +105,83 @@ describe("Vesting", function () {
     expect(userBalance).to.eq(balance);
   });
 
-  // it("Should transfer funds to two users", async function () {
-  //   const [owner, ana, simon] = await ethers.getSigners();
-  //   const Vault = await ethers.getContractFactory("Vesting");
+  it("Should transfer funds to two users", async function () {
+    const [owner, ana, simon] = await ethers.getSigners();
+    const Vault = await ethers.getContractFactory("Vesting");
 
-  //   const vault = await Vault.deploy(token.address);
-  //   await vault.deployed();
+    const vault = await Vault.deploy(token.address, 24);
+    await vault.deployed();
 
-  //   let userBalance = await token.balanceOf(ana.address);
-  //   expect(userBalance).to.eq(0);
+    let userBalance = await token.balanceOf(ana.address);
+    expect(userBalance).to.eq(0);
 
-  //   const a = 500_000_000;
-  //   // const xx = 30_000_000
+    const a = 500_000_000;
+    // const xx = 30_000_000
 
-  //   // should revert
-  //   await expect(vault.transfer([0], a, 0)).to.be.revertedWith("error-no-users");
+    // should revert
+    await expect(vault.transfer([0], 0)).to.be.revertedWith("error-no-users");
 
-  //   // approve the contract to spend the money
-  //   await token.approve(vault.address, a, { from: owner.address });
+    // approve the contract to spend the money
+    await token.approve(vault.address, a, { from: owner.address });
 
-  //   const vaultB = await token.balanceOf(owner.address);
-  //   expect(vaultB).to.eq(tokens);
+    const vaultB = await token.balanceOf(owner.address);
+    expect(vaultB).to.eq(tokens);
 
-  //   const aa = 50_000_000;
+    const aa = 50_000_000;
+    const i = 2_000_000;
 
-  //   // add ana
-  //   expect(await vault.add("Ana", aa, [ana.address])).to.emit(vault, 'UserAdded').withArgs(0);
+    // add ana
+    expect(await vault.add("Ana", aa, i, [ana.address])).to.emit(vault, 'UserAdded').withArgs(0);
 
-  //   // add simon
-  //   expect(await vault.add("Simon", aa, [simon.address])).to.emit(vault, 'UserAdded').withArgs(1);
+    // add simon
+    expect(await vault.add("Simon", aa, i, [simon.address])).to.emit(vault, 'UserAdded').withArgs(1);
 
-  //   // now transfer
-  //   await vault.transfer([0,1,2], aa, 0);
+    // now transfer
+    await vault.transfer([0,1,2], 0);
 
-  //   // balances
-  //   const anaB = await token.balanceOf(ana.address);
-  //   expect(anaB).to.eq(aa);
-  //   const simonB = await token.balanceOf(simon.address);
-  //   expect(simonB).to.eq(aa);
+    // balances
+    const anaB = await token.balanceOf(ana.address);
+    expect(anaB).to.eq(i);
+    const simonB = await token.balanceOf(simon.address);
+    expect(simonB).to.eq(i);
+  });
 
-  //   // balance should eq 0
-  //   let u = await vault.userBalance(0);
-  //   expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
+  it("Should delete a user and funds", async function () {
+    const [owner, ana, simon] = await ethers.getSigners();
+    const Vault = await ethers.getContractFactory("Vesting");
 
-  //   u = await vault.userBalance(1);
-  //   expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
-  // });
+    const vault = await Vault.deploy(token.address, 24);
+    await vault.deployed();
 
-  // it("Should delete a user and funds", async function () {
-  //   const [owner, ana, simon] = await ethers.getSigners();
-  //   const Vault = await ethers.getContractFactory("Vesting");
+    const a = 500_000_000;
 
-  //   const vault = await Vault.deploy(token.address);
-  //   await vault.deployed();
+    // approve the contract to spend the money
+    await token.approve(vault.address, a, { from: owner.address });
 
-  //   const a = 500_000_000;
+    const vaultB = await token.balanceOf(owner.address);
+    expect(vaultB).to.eq(tokens);
 
-  //   // approve the contract to spend the money
-  //   await token.approve(vault.address, a, { from: owner.address });
+    const aa = 50_000_000;
+    const i = 2_000_000;
 
-  //   const vaultB = await token.balanceOf(owner.address);
-  //   expect(vaultB).to.eq(tokens);
+    // add ana
+    expect(await vault.add("Ana", aa, i, [ana.address])).to.emit(vault, 'UserAdded').withArgs(0);
 
-  //   const aa = 50_000_000;
+    let u = await vault.userBalance(0);
+    expect(ethers.BigNumber.from(aa-i)).to.equal(ethers.BigNumber.from(u));
 
-  //   // add ana
-  //   expect(await vault.add("Ana", aa, [ana.address])).to.emit(vault, 'UserAdded').withArgs(0);
+    expect(await token.balanceOf(owner.address)).to.eq(tokens-aa);
+    expect(await token.balanceOf(vault.address)).to.eq(aa);
 
-  //   let u = await vault.userBalance(0);
-  //   expect(ethers.BigNumber.from(aa)).to.equal(ethers.BigNumber.from(u));
+    // remove the user
+    expect(await vault.remove(0)).to.emit(vault, 'UserRemoved').withArgs(0);
 
-  //   expect(await token.balanceOf(owner.address)).to.eq(tokens-aa);
-  //   expect(await token.balanceOf(vault.address)).to.eq(aa);
+    u = await vault.userBalance(0);
+    expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
 
-  //   // remove the user
-  //   expect(await vault.remove(0)).to.emit(vault, 'UserRemoved').withArgs(0);
-
-  //   u = await vault.userBalance(0);
-  //   expect(ethers.BigNumber.from(0)).to.equal(ethers.BigNumber.from(u));
-
-  //   expect(await token.balanceOf(owner.address)).to.eq(tokens);
-  //   expect(await token.balanceOf(vault.address)).to.eq(0);
-  // });
+    expect(await token.balanceOf(owner.address)).to.eq(tokens);
+    expect(await token.balanceOf(vault.address)).to.eq(0);
+  });
 
   // it("Should delete a user and funds after some vesting stuff", async function () {
   //   const [owner, ana, simon] = await ethers.getSigners();
