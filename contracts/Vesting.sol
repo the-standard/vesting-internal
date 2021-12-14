@@ -25,7 +25,6 @@ contract Vesting is Ownable {
     string name;
     uint256 total;
     uint256 balance;
-    uint256 initial;
     address[] addresses;
   }
 
@@ -46,7 +45,6 @@ contract Vesting is Ownable {
   function add(
     string memory name,
     uint256 amount,
-    uint256 initial,
     address[] memory addresses
   ) public onlyOwner returns (uint256) {
     require(active == 1, "not-active");
@@ -57,8 +55,7 @@ contract Vesting is Ownable {
       name: name,
       total: amount,
       balance: amount,
-      initial: initial,
-      addresses: addresses,
+      addresses: addresses
     });
 
     // add the user to the array;
@@ -136,8 +133,7 @@ contract Vesting is Ownable {
         continue;
       }
 
-      uint256 b = user.total.sub(user.total);
-      uint256 amount = b.div(uint256(months));
+      uint256 amount = user.total.div(uint256(months));
 
       // if the balance of the user is less than the monthly amount
       // just use the balance of the user, which should zero stuff out
