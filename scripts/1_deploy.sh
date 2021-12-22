@@ -5,7 +5,7 @@ async function main() {
 
   const Vault = await hre.ethers.getContractFactory("Vesting");
 
-  const vault = await Vault.deploy(process.env.ERC20_TOKEN);
+  const vault = await Vault.deploy(process.env.ERC20_TOKEN, 24);
 
   await vault.deployed();
 
@@ -20,6 +20,8 @@ async function main() {
   const name = await contract.approve(vault.address, process.env.ALLOWANCE);
 
   console.log("approved!", name);
+
+
 }
 
 main()
@@ -28,4 +30,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

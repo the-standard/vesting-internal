@@ -8,4 +8,4 @@ typechain
 cache
 artifacts
 
-scripts/2_allocate.js
+scripts/*
